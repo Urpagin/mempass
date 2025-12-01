@@ -1,0 +1,26 @@
+/*
+* Author: Urpagin
+* Date: 2025-12-01
+* Description: A small header-only string.
+*/
+
+#include <stddef.h>
+// A custom String.
+typedef struct String {
+    size_t capacity;
+    size_t len;
+    char* buf;
+} str;
+
+
+// Instantiates a new String with 
+str str_new() {
+    // "compound literal" syntax.
+    return (str){0, 0, NULL};
+}
+
+// Appends a buffer to a str.
+str append_buf(str *s, char[] buf, size_t size) {
+
+}
+
