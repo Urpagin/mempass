@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 
 // A custom String.
 typedef struct String {
@@ -98,3 +100,27 @@ static inline str str_from_stdin(char *prompt) {
 static inline void str_debug(const str *s) {
   printf("String: {capacity: %ld; length: %ld}\n", s->cap, s->len);
 }
+
+
+// Sets the ECHO bit of the terminal file fd to:
+// OFF if state == 0
+// ON otherwise.
+// TODO: return int, 0 success -1 error.
+//
+// TODO: After pressing [ENTER] after getting the user input,
+// TODO: it echoes the full text at the end. Altough the ECHO works WHILE the user it typing.
+static inline void set_echo(const int fd, int state) {
+    struct termios t;
+    // Gets the existing termios config for the fd.
+    tcgetattr(fd, &t);
+
+    // ON
+    if (state) t.c_lflag |= ECHO;
+    // OFF
+    else t.c_lflag &= ~ECHO;
+
+    // Apply the changes
+    tcsetattr(fd, TCSANOW, &t);
+}
+
+

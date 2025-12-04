@@ -6,12 +6,23 @@
  */
 
 #include "str.h"
+#include <unistd.h>
+
 
 int main(int argc, char *argv[]) {
-    str u = str_from_stdin("Usr: ");
 
-  // str u = get_usr_input("Prompt: ");
-  str_print(&u);
+    set_echo(STDIN_FILENO, 1);
+    str u = str_from_stdin("after 1: ");
 
-  return 0;
+    set_echo(STDIN_FILENO, 0);
+    str i = str_from_stdin("after 0: ");
+
+    //
+    // set_echo(STDIN_FILENO, 1);
+    // str j = str_from_stdin("after 1 again: ");
+    //
+    // str u = get_usr_input("Prompt: ");
+    str_print(&u);
+
+    return 0;
 }
