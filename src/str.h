@@ -35,7 +35,7 @@ static inline str str_new(size_t capacity) {
         return (str){0, 0, NULL};
     }
 
-    char* p = (char*)malloc(capacity++);
+    char *p = (char *)malloc(capacity++);
     if (!p) {
         return (str){0, 0, NULL};
     }
