@@ -27,9 +27,16 @@ typedef struct String {
 
 // Instantiates a new String with
 // capacity is the initial capacity allocated.
+// TODO: Fix Valgring illegal write.
+// TODO: Must be the null-terminator that's not accounted for or something
 static inline str str_new(size_t capacity) {
     if (!capacity) {
         // "compound literal" syntax.
+        return (str){0, 0, NULL};
+    }
+
+    char* p = (char*)malloc(capacity++);
+    if (!p) {
         return (str){0, 0, NULL};
     }
 
@@ -107,15 +114,15 @@ static inline void str_debug(const str *s) {
 // Sets the ECHO bit of the terminal file fd to:
 // OFF if state == 0
 // ON otherwise.
-// TODO: return int, 0 success -1 error.
 //
-// TODO: After pressing [ENTER] after getting the user input,
-// TODO: it echoes the full text at the end. Altough the ECHO works WHILE the
-// user it typing.
-static inline void set_echo(const int fd, int state) {
+// Returns -1 on failure, 0 on success.
+static inline int set_echo(const int fd, int state) {
     struct termios t;
     // Gets the existing termios config for the fd.
-    tcgetattr(fd, &t);
+    if (tcgetattr(fd, &t) == -1) {
+        perror("[termios] failed to get attrs for fd");
+        return -1;
+    }
 
     // ON
     if (state)
@@ -125,17 +132,21 @@ static inline void set_echo(const int fd, int state) {
         t.c_lflag &= ~ECHO;
 
     // Apply the changes
-    tcsetattr(fd, TCSANOW, &t);
+    if (tcsetattr(fd, TCSANOW, &t) == -1) {
+        perror("[termios] failed to set attrs for fd");
+        return -1;
+    }
+
+    return 0;
 }
-
-
 
 // Removes the last \10 (\n) if there is one
 // and replaces it with a null terminator.
 //
 // If the string's len is 0, no-op.
 static inline void trim_last(str *s) {
-    if (!s->len) return ;
+    if (!s->len)
+        return;
 
     // Last char
     const size_t last_idx = s->len - 1;
@@ -145,20 +156,20 @@ static inline void trim_last(str *s) {
     }
 }
 
-
 // Get password securely
 // Trims any newlines.
 static inline str get_pass(void) {
     // Disable ECHO
-    set_echo(STDIN_FILENO, 0);
+    if (set_echo(STDIN_FILENO, 0) == -1)
+        exit(1);
 
     str pass = str_from_stdin("Secret: ");
 
     trim_last(&pass);
 
     // Revert back to normal.
-    set_echo(STDIN_FILENO, 1);
-
+    if (set_echo(STDIN_FILENO, 1) == -1)
+        exit(1);
 
     return pass;
 }

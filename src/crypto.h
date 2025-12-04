@@ -8,7 +8,6 @@
 
 #pragma once
 
-
 #include "str.h"
 #include <fcntl.h>
 #include <stdint.h>
@@ -20,8 +19,7 @@
 // from /dev/random.
 // Returns 0 on success, -1 on error.
 // if size == 0, or passes == 0, returns 0 not performing anything.
-static int shred(void *data, const size_t size,
-                          const size_t passes) {
+static int shred(void *data, const size_t size, const size_t passes) {
 
     // I know it's useless because of the forloop (passes), but who cares!
     // No one's ever going to read this, anyway.
@@ -31,7 +29,7 @@ static int shred(void *data, const size_t size,
 
     // To middle-finger the compiler from possibly
     // optimizing away our pretty logic.
-    volatile uint8_t *p = (volatile uint8_t*)data;
+    volatile uint8_t *p = (volatile uint8_t *)data;
 
     int fd = open("/dev/random", O_RDONLY);
     if (fd == -1) {
@@ -83,4 +81,3 @@ static inline int obliterate_str(str *s) {
     free(s->buf);
     return ret;
 }
-

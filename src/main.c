@@ -5,12 +5,11 @@
  * License: Copyright (C) 2025 Urpagin (GPL v2)
  */
 
-#include "str.h"
 #include "crypto.h"
+#include "str.h"
 #include <fcntl.h>
 #include <stdint.h>
 #include <unistd.h>
-
 
 int main(int argc, char *argv[]) {
 
