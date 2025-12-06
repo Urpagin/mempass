@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <openssl/sha.h>
 
 // Shreds a memory zone up to and including `size`
 // bytes, `passes` times over using random data
@@ -81,3 +82,42 @@ static inline int obliterate_str(str *s) {
     free(s->buf);
     return ret;
 }
+
+
+// Used to hold securely a secret.
+// The secret and a salt are hashed to produce hash.
+// Uses the Sha512 hashing algorithm to produce a 64 bit digest.
+//
+// The hashed string should have been: "<secret>$<salt>".
+typedef struct S512HashedString{
+    uint8_t digest[SHA512_DIGEST_LENGTH];
+    char *salt;
+} hstr;
+
+// Hashes a str using the Sha512 hashing algorithm.
+// 
+// The input str is then obliterated (shredded + freed).
+hstr hstr_new(str **s) {
+
+
+    char data[] = "data to hash";
+    char hash[SHA512_DIGEST_LENGTH];
+    const unsigned char *data = (*s)->buf;
+    SHA512(const unsigned char *d, size_t n, unsigned char *md);
+    SHA512()
+    SHA512(data, sizeof(data) - 1, hash);
+
+    // 'hash' now contains the raw 64-byte binary hash.  If you want to print it out
+    // in a human-readable format, you'll need to convert it to hex, e.g.
+
+    obliterate_str(s);
+}
+
+// Compares the hash of a str with a hstr.
+// RETURN VALUES:
+// 0 if a != b
+// 1 if a == b
+int hstr_is_equal_str(str **a, hstr *b) {
+    return 0;
+}
+
