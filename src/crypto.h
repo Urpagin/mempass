@@ -10,10 +10,12 @@
 
 #include "str.h"
 #include <fcntl.h>
+#include <openssl/sha.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <openssl/sha.h>
 
 // Shreds a memory zone up to and including `size`
 // bytes, `passes` times over using random data
@@ -83,41 +85,86 @@ static inline int obliterate_str(str *s) {
     return ret;
 }
 
-
 // Used to hold securely a secret.
 // The secret and a salt are hashed to produce hash.
 // Uses the Sha512 hashing algorithm to produce a 64 bit digest.
 //
 // The hashed string should have been: "<secret>$<salt>".
-typedef struct S512HashedString{
+typedef struct S512HashedString {
     uint8_t digest[SHA512_DIGEST_LENGTH];
     char *salt;
 } hstr;
 
+// Generates n ASCII characters from /dev/urandom (except sep).
+static str rng_generate(size_t n, char sep) {
+    int fd;
+    if ((fd = open("/dev/urandom", O_RDONLY)) == -1) {
+        perror("Failed to open /dev/urandom");
+        fprintf(stderr, "Cannot generate salt; exitting...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    uint8_t byte;
+    size_t total = 0;
+    // +1 because i don't even know if the null terminator is included or not
+    // :shrug:
+    str salt = str_new(n + 1);
+    while (total < n) {
+        ssize_t r = read(fd, &byte, 1);
+
+        if (r <= 0) {
+            perror("Failed to read /dev/urandom");
+            fprintf(stderr, "Cannot generate salt; exitting...\n");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+
+        // printable ASCII chars
+        static const uint8_t ASCII_BEGIN = 33;
+        static const uint8_t ASCII_END = 126;
+
+        // only visible ASCII chars (33..=126)
+        char current_char = byte % ASCII_END; // 0..126
+        if (current_char < ASCII_BEGIN)
+            current_char += ASCII_BEGIN;
+
+        if (current_char == sep)
+            continue;
+
+        str_append_buf(&salt, &current_char, 1);
+        total++;
+    }
+
+    close(fd);
+
+    // Add a null-terminator to salt? idontknow
+    return salt;
+}
+
 // Hashes a str using the Sha512 hashing algorithm.
-// 
-// The input str is then obliterated (shredded + freed).
-hstr hstr_new(str **s) {
+// DO NOT FORGET TO OBLITERATE THE SECRET.
+static hstr hstr_new(str *secret) {
+    hstr hashed;
 
+    // Salt the secret
+    str salt = rng_generate(10, '$');
+    hashed.salt = salt.buf;
+    str_append(secret, "$");
+    str_append_buf(secret, salt.buf, salt.len);
 
-    char data[] = "data to hash";
-    char hash[SHA512_DIGEST_LENGTH];
-    const unsigned char *data = (*s)->buf;
-    SHA512(const unsigned char *d, size_t n, unsigned char *md);
-    SHA512()
-    SHA512(data, sizeof(data) - 1, hash);
+    // TODO: inspect if this cast is legal
+    const unsigned char *data = (unsigned char *)secret->buf;
+    unsigned char digest[SHA512_DIGEST_LENGTH];
+    SHA512(data, secret->len, hashed.digest);
+    // 'digest' now contains the raw 64-byte binary hash.
 
-    // 'hash' now contains the raw 64-byte binary hash.  If you want to print it out
-    // in a human-readable format, you'll need to convert it to hex, e.g.
-
-    obliterate_str(s);
+    return hashed;
 }
 
 // Compares the hash of a str with a hstr.
+// DO NOT FORGET TO OBLITERATE THE SECRET.
+//
 // RETURN VALUES:
 // 0 if a != b
 // 1 if a == b
-int hstr_is_equal_str(str **a, hstr *b) {
-    return 0;
-}
-
+static int hstr_is_equal_str(str **a, hstr *b) { return 0; }

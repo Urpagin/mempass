@@ -8,15 +8,13 @@
 
 #pragma once
 
-// For getline()
-#define _POSIX_C_SOURCE 200809L
-
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include "crypto.h"
 
 // A custom String.
 typedef struct String {
@@ -158,7 +156,7 @@ static inline void trim_last(str *s) {
 
 // Get password securely
 // Trims any newlines.
-static inline str get_pass(void) {
+static inline hstr get_pass(void) {
     // Disable ECHO
     if (set_echo(STDIN_FILENO, 0) == -1)
         exit(1);
@@ -171,5 +169,8 @@ static inline str get_pass(void) {
     if (set_echo(STDIN_FILENO, 1) == -1)
         exit(1);
 
-    return pass;
+    hstr hashed = hstr_new(&pass);
+    obliterate_str(&pass);
+
+    return hashed;
 }
